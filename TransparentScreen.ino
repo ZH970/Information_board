@@ -13,6 +13,7 @@
 #include "./Pic/Astronaut/As.h"
 #include "./Pic/weather/Weather.h"
 #include "./Pic/picture/Picture.h"
+#include "Keypad.h"
 
 /*********注意填写自己Wifi的账号密码**********/
 const char *ssid     = "Xiaomi_136B";  //Wifi账号
@@ -41,12 +42,25 @@ char determinexue[]="雪";
 unsigned long currentSec;
 int i = 0;
 int k = 0;
+int cho = 0;
 int ph;
 int flag = 1;
 char* now_wea;
 int tm_Hour,tm_Minute,monthDay,tm_Month;
 String weekDay;
 char* week;
+char key;
+
+const byte ROWS = 3; // number of rows
+const byte COLS = 1; // number of columns
+char keys[ROWS][COLS] = {
+{'N'},
+{'S'},
+{'Y'}
+};
+byte rowPins[ROWS] = {5,17,16}; // row pinouts of the keypad(GPIO1 cannot used)
+byte colPins[COLS] = {4};    // column pinouts of the keypad
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
 /*************Connect Wifi********************/
 void get_wifi()
@@ -231,8 +245,8 @@ void setup()
     tft.init();                         //初始化显示寄存器
     tft.fillScreen(TFT_WHITE);          //屏幕颜色
     tft.setTextColor(TFT_BLACK);        //设置字体颜色黑色
-    tft.setCursor(15, 25, 2);           //设置文字开始坐标(15,30)及2号字体
-    tft.setTextSize(2);
+    tft.setCursor(15, 25, 1);           //设置文字开始坐标(15,30)及2号字体
+    tft.setTextSize(1);
     
     tft.println("Connecting Wifi...");
     //tft.setRotation(4);//屏幕内容镜像显示或者旋转屏幕0-4  ST7735_Rotation中设置
@@ -240,8 +254,8 @@ void setup()
     tft.setSwapBytes(true);             //使图片颜色由RGB->BGR
     for (int j = 0; j < 5; j++)
     {
-        tft.pushImage(14, 65, 100, 20, ConnectWifi[j]);   //调用图片数据
-        delay(400);  
+      tft.pushImage(14, 65, 100, 20, ConnectWifi[j]);   //调用图片数据
+      delay(400);  
     }
     get_wifi();                         // Wifi连接
     get_weather();
@@ -259,13 +273,22 @@ void setup()
     delay(100);
     tft.pushImage(0, 0, 128, 128, Mac1);
     delay(850);
-    tft.fillScreen(TFT_BLACK); 
 }
 
 /*******************Loop*******************/
 
 void loop()
 { 
+    char key = keypad.getKey(); 
+    while (1) {
+      key = keypad.getKey();
+      Serial.println(key);
+      if (key == 'N' || key == 'S' || key == 'Y') {
+        Serial.println("OK");
+        break;
+      }
+    }
+  
     timeClient.update();
     unsigned long epochTime = timeClient.getEpochTime();
     //Serial.println(epochTime);
@@ -301,36 +324,78 @@ void loop()
       minute = String(tm_Minute);
     currentTime = hour + ":" + minute;
 
-    //Serial.print("Cruuent Sec:");
-    //Serial.println(currentSec);
-    if(epochTime - currentSec >= 5)
-    {
+    // //Serial.print("Cruuent Sec:");
+    // //Serial.println(currentSec);
+    // if(epochTime - currentSec >= 5)
+    // {
       
-      tft.fillScreen(TFT_BLACK); 
-      show_weather(TFT_WHITE,TFT_BLACK);  // 显示天气界面
-      delay(3000);
-      tft.fillScreen(TFT_BLACK);
-      show_Bstation(TFT_WHITE,TFT_BLACK); // 显示B站粉丝数界面
-      delay(3000);
-      tft.fillScreen(TFT_BLACK);
-      tft.setSwapBytes(true);             //使图片颜色由RGB->BGR
-      tft.pushImage(0, 0, 128, 128, warma);
-      delay(1000);
-      tft.pushImage(0, 0, 128, 128, ikun);
-      delay(1000);
-      tft.pushImage(0, 0, 128, 128, pic1);
-      delay(1000);
-      currentSec = timeClient.getEpochTime();
-      tft.fillScreen(TFT_BLACK);
-    }
-    else
-    {
-      show_time(TFT_WHITE, TFT_BLACK, Astronaut, currentTime, currentDate, tm_Year, week); // 显示时间界面
-    }
+    //   tft.fillScreen(TFT_BLACK); 
+    //   show_weather(TFT_WHITE,TFT_BLACK);  // 显示天气界面
+    //   delay(3000);
+    //   tft.fillScreen(TFT_BLACK);
+    //   show_Bstation(TFT_WHITE,TFT_BLACK); // 显示B站粉丝数界面
+    //   delay(3000);
+    //   tft.fillScreen(TFT_BLACK);
+    //   tft.setSwapBytes(true);             //使图片颜色由RGB->BGR
+    //   tft.pushImage(0, 0, 128, 128, warma);
+    //   delay(1000);
+    //   tft.pushImage(0, 0, 128, 128, ikun);
+    //   delay(1000);
+    //   tft.pushImage(0, 0, 128, 128, pic1);
+    //   delay(1000);
+    //   currentSec = timeClient.getEpochTime();
+    //   tft.fillScreen(TFT_BLACK);
+    // }
+    // else
+    // {
+    //   show_time(TFT_WHITE, TFT_BLACK, Astronaut, currentTime, currentDate, tm_Year, week); // 显示时间界面
+    // }
       
-    delay(50);
+    // delay(50);
     
+    if (key == 'N') {
+      tft.fillScreen(TFT_BLACK); 
+    }
+    if (key == 'S') {
+      tft.fillScreen(TFT_BLACK);
+      sshow(currentTime,currentDate, tm_Year, week);
+      if (cho == 5) {cho=0;}
+      else {cho+=1;}
+    }
+    if (key == 'Y') {
+      tft.fillScreen(TFT_BLACK);   
+    }  
 }
+
+void sshow(String currentTime,String currentDate,int tm_Year,const char* week) {
+  if (cho == 0) {
+    tft.fillScreen(TFT_BLACK);
+    show_time(TFT_WHITE, TFT_BLACK, Astronaut, currentTime, currentDate, tm_Year, week); // 显示时间界面
+  }
+  if (cho == 1) {
+    tft.fillScreen(TFT_BLACK); 
+    show_weather(TFT_WHITE,TFT_BLACK);  // 显示天气界面
+  } 
+  if (cho == 2) {
+    tft.fillScreen(TFT_BLACK);
+    show_Bstation(TFT_WHITE,TFT_BLACK); // 显示B站粉丝数界面
+  }
+  if (cho == 3) {
+    tft.fillScreen(TFT_BLACK);
+    tft.setSwapBytes(true);             //使图片颜色由RGB->BGR
+    tft.pushImage(0, 0, 128, 128, warma);
+  }
+  if (cho == 4) {
+    tft.fillScreen(TFT_BLACK);
+    tft.setSwapBytes(true);             //使图片颜色由RGB->BGR
+    tft.pushImage(0, 0, 128, 128, ikun);
+  }
+  if (cho == 5) {
+    tft.fillScreen(TFT_BLACK);
+    tft.pushImage(0, 0, 128, 128, pic1);
+  }
+}
+
 /*******************时间界面显示****************/
 void show_time(uint16_t fg,uint16_t bg,const uint16_t* image[], String currentTime, String currentDate, int tm_Year,const char* week)
 {
